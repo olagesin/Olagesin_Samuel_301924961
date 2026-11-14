@@ -144,84 +144,134 @@ requirement for exactly two entries per completed transfer.
 Its implementation requires controlled transactional writes;
 foreign keys only establish valid references.
 
-## 8. Relational Schema
 
-The PostgreSQL implementation is available in [schema.sql](Olagesin_Samuel_301924961_Schema.sql).
+## 8. PostgreSQL Setup and Schema Implementation
 
-The relational model is:
+### 8.1. Environment
 
-- customers(customer_id, full_name, email)
-- wallets(wallet_id, customer_id, currency, opening_balance, balance)
-- transfers(transfer_id, request_key, source_wallet_id,
-  destination_wallet_id, amount, created_at)
-- ledger_entries(entry_id, transfer_id, wallet_id, delta)
+The database implementation uses PostgreSQL, accessed through DBeaver.
 
-### Primary Keys
 
-Each table uses its identifier column as its primary key:
+### 8.2. Connection Verification
 
-- customers: customer_id
-- wallets: wallet_id
-- transfers: transfer_id
-- ledger_entries: entry_id
+The following query identifies the database server version,
+active database and connected user:
 
-### Foreign Keys
+```sql
+SELECT
+    version(),
+    current_database(),
+    current_user;
+```
 
-- wallets.customer_id references customers.customer_id.
-- transfers.source_wallet_id references wallets.wallet_id.
-- transfers.destination_wallet_id references wallets.wallet_id.
-- ledger_entries.transfer_id references transfers.transfer_id.
-- ledger_entries.wallet_id references wallets.wallet_id.
+**Observed result:** I can see the current version of postgres running, the database I am connected to and the current user.
 
-### Unique Constraints
+![PostgreSQL connection verification](evidence/connection_verification.png)
 
-- Customer email addresses must be unique.
-- The combination of customer_id and currency must be unique.
-- Transfer request keys must be unique.
-- The combination of transfer_id and wallet_id must be unique
-  in ledger_entries.
+### 8.3. Assignment Database Verification
 
-The NGN-only currency restriction, together with the unique
-customer/currency constraint, permits at most one wallet per customer.
+After connecting to the database selected for the assignment,
+I executed:
 
-### Data Types
+```sql
+SELECT current_database();
+```
 
-- Identifiers use BIGINT.
-- Names, email addresses and request keys use TEXT.
-- Currency uses CHAR(3).
-- Monetary values use NUMERIC(18,2).
-- Transfer timestamps use TIMESTAMPTZ.
+**Observed result:** swiftwallet
 
-NUMERIC provides exact decimal storage for monetary values.
-TIMESTAMPTZ represents an instant independently of the session's
-display time zone.
+![Assignment database verification](evidence/current_database.png)
 
-### Check and Nullability Constraints
+This identifies the database used for the implementation.
 
-Required fields use NOT NULL.
+### 8.4. Schema Implementation
+
+The table definitions are provided in [schema.sql](Olagesin_Samuel_301924961_Schema.sql).
+
+The schema contains four tables:
+
+| Table | Purpose |
+|---|---|
+| customers | Stores registered customer details |
+| wallets | Stores wallet ownership, currency and balances |
+| transfers | Stores completed transfers between wallets |
+| ledger_entries | Stores signed debit and credit movements |
+
+I executed schema.sql in DBeaver against the assignment database.
+
+**Execution outcome:** Success on execution
+
+![Schema execution result](evidence/schema_run.png)
+
+### 8.5. Table Verification
+
+After execution, I refreshed the database navigator in DBeaver
+and checked that the four tables were present.
+
+![Created database tables](evidence/table_verification.png)
+
+### 8.6. Primary Keys and Foreign Keys
+
+Each table has a primary key:
+
+| Table | Primary key |
+|---|---|
+| customers | customer_id |
+| wallets | wallet_id |
+| transfers | transfer_id |
+| ledger_entries | entry_id |
+
+The foreign-key relationships are:
+
+| Foreign-key column | Referenced column |
+|---|---|
+| wallets.customer_id | customers.customer_id |
+| transfers.source_wallet_id | wallets.wallet_id |
+| transfers.destination_wallet_id | wallets.wallet_id |
+| ledger_entries.transfer_id | transfers.transfer_id |
+| ledger_entries.wallet_id | wallets.wallet_id |
+
+**Verification method:** I ran a query to check all foreign keys under that schema
+
+![Key and constraint inspection](evidence/foreign_key_verification.png)
+
+
+### 8.7. Unique and Check Constraints
+
+The schema defines the following unique constraints:
+
+- customers.email
+- wallets(customer_id, currency)
+- transfers.request_key
+- ledger_entries(transfer_id, wallet_id)
 
 CHECK constraints enforce:
+
 - NGN as the supported currency.
-- Non-negative opening and current balances.
+- Non-negative opening and current wallet balances.
 - Positive transfer amounts.
 - Different source and destination wallets.
 - Non-zero ledger movements.
 
-### Rules Requiring Transactional Logic
+Required columns use NOT NULL.
 
-Table constraints do not enforce every business rule.
+The validation section records whether these constraints reject
+invalid data as intended.
+
+### 8.8. Rules Requiring Transactional Logic
+
+Table constraints alone do not guarantee every business rule.
 
 The transfer operation must also:
-- Check available funds safely under concurrent requests.
-- Reject input with more than two decimal places before storage.
-- Apply the debit and credit atomically.
-- Produce exactly two balanced ledger entries.
-- Keep stored balances consistent with ledger movements.
-- Distinguish an identical retry from reuse of a request key
-  with a different payload.
 
-These behaviours will be demonstrated in the transactions
-and concurrency portfolio.
+- Check available funds safely under concurrent requests.
+- Apply the debit and credit atomically.
+- Create exactly two balanced ledger entries.
+- Keep wallet balances consistent with ledger movements.
+- Handle repeated request keys without moving money twice.
+- Reject amounts with more than two decimal places before storage.
+
+These behaviours will be implemented and tested in the
+transactions and concurrency portfolio.
 
 ## 9. Normalisation and Design Decisions
 
