@@ -343,13 +343,38 @@ Any difference indicates an inconsistency requiring investigation.
 
 The sample-data script is available in [seed.sql](Olagesin_Samuel_301924961_Seed.sql).
 
-All customer details and transaction records are synthetic.
+All customer details and transaction records are randomly generated.
 
-The dataset contains:
 
-| Table | Actual number of records |
-|---|---|
-| customers | [ENTER COUNT] |
-| wallets | [ENTER COUNT] |
-| transfers | [ENTER COUNT] |
-| ledger_entries | [ENTER COUNT] |
+![Sample-data execution](evidence/seeded_result.png)
+
+### 10.2. Record Verification
+
+After executing seed.sql, I queried the tables to check their
+record counts and inspect selected rows.
+
+**Queries executed:**
+
+```sql
+SELECT 'customers' AS table_name, COUNT(*) AS record_count
+FROM wallet_demo.customers
+
+UNION ALL
+
+SELECT 'wallets', COUNT(*)
+FROM wallet_demo.wallets
+
+UNION ALL
+
+SELECT 'transfers', COUNT(*)
+FROM wallet_demo.transfers
+
+UNION ALL
+
+SELECT 'ledger_entries', COUNT(*)
+FROM wallet_demo.ledger_entries;
+```
+
+This was the result of the query
+
+![Sample-data execution](evidence/result_count.png)
