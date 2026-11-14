@@ -128,3 +128,18 @@ Each ledger entry belongs to exactly one transfer and one wallet.
 
 The "exactly two ledger entries" rule is a business invariant.
 A foreign key alone cannot enforce it.
+
+## 7. Entity Relationship Diagram
+
+![SwiftWallet entity relationship diagram](Olagesin_Samuel_301924961_ER_Diagram.png)
+
+The diagram shows the four entities, their key attributes
+and their relationships.
+
+The source and destination relationships between Wallet and
+Transfer represent different roles played by the same entity.
+
+The transfer-to-ledger relationship represents the business
+requirement for exactly two entries per completed transfer.
+Its implementation requires controlled transactional writes;
+foreign keys only establish valid references.
