@@ -222,3 +222,65 @@ The transfer operation must also:
 
 These behaviours will be demonstrated in the transactions
 and concurrency portfolio.
+
+## 9. Normalisation and Design Decisions
+
+### First Normal Form (1NF)
+
+Each table has a primary key and stores a single value in
+each column. Repeating groups are represented as separate rows.
+
+For example, a wallet's transactions are stored as transfer
+and ledger records rather than as a list inside the wallet row.
+
+### Second Normal Form (2NF)
+
+Non-key attributes depend on the whole of each candidate key.
+
+The tables use single-column primary keys. For the composite
+alternate keys, wallet attributes describe the customer/currency
+wallet, and a ledger delta describes the transfer/wallet entry.
+
+### Third Normal Form (3NF)
+
+Customer details are stored in customers rather than repeated
+in wallets or transfers.
+
+Transfer metadata is stored in transfers rather than repeated
+in each ledger entry.
+
+This separation reduces update anomalies. Changing a customer's
+email does not require modifying their transaction history.
+
+### Deliberate Redundancy
+
+The current wallet balance is stored even though it can be
+calculated as:
+
+opening balance + sum of ledger deltas
+
+This avoids recalculating the full ledger for every balance lookup,
+but creates an additional consistency obligation.
+
+Ledger entries also store signed amounts derived from their
+associated transfers. This supports account-level accounting
+queries but requires controlled writes and validation.
+
+The design therefore combines normalised entity data with
+deliberately stored financial summaries and movements.
+
+### Reconciliation
+
+A reconciliation query will compare each stored wallet balance
+with its opening balance plus ledger movements.
+
+Any difference indicates an inconsistency requiring investigation.
+
+### Limitations
+
+- Exactly two balanced entries per transfer are not enforced
+  by foreign keys or simple CHECK constraints.
+- Stored balances can become inconsistent if uncontrolled
+  direct writes bypass the transfer operation.
+- Production use would require restricted database permissions,
+  audit controls and stronger operational safeguards.
