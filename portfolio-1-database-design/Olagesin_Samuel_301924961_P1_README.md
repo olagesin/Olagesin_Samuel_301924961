@@ -60,3 +60,71 @@ Deposit processing is outside the initial scope.
 
 Customer-facing and staff-facing applications are not implemented
 in this portfolio.
+
+## 5. Identified Entities and Attributes
+
+### Customer
+Represents a person registered on the platform.
+
+| Attribute | Purpose |
+|---|---|
+| customer_id | Unique customer identifier |
+| full_name | Customer's name |
+| email | Unique customer email address |
+
+### Wallet
+Represents a customer's NGN wallet.
+
+| Attribute | Purpose |
+|---|---|
+| wallet_id | Unique wallet identifier |
+| customer_id | Identifies the wallet owner |
+| currency | Currency supported by the wallet |
+| opening_balance | Funds held at the start of the demonstration |
+| balance | Current available balance |
+
+### Transfer
+Represents a completed movement of money between two wallets.
+
+| Attribute | Purpose |
+|---|---|
+| transfer_id | Unique transfer identifier |
+| request_key | Identifies a transfer request and its retries |
+| source_wallet_id | Wallet sending the money |
+| destination_wallet_id | Wallet receiving the money |
+| amount | Amount transferred |
+| created_at | Date and time of the transfer |
+
+Only completed transfers are retained in this initial model.
+Failed attempts and pending transfer workflows are outside its scope.
+
+### Ledger Entry
+Represents the signed movement of money in one wallet.
+
+| Attribute | Purpose |
+|---|---|
+| entry_id | Unique ledger entry identifier |
+| transfer_id | Transfer that produced the entry |
+| wallet_id | Wallet affected by the entry |
+| delta | Negative for a debit; positive for a credit |
+
+A transfer of NGN 500 produces:
+- A ledger entry of -500 for the source wallet.
+- A ledger entry of +500 for the destination wallet.
+
+## 6. Relationships and Cardinalities
+
+| Relationship | Cardinality |
+|---|---|
+| Customer to Wallet | One customer has zero or one wallet in the NGN-only scope |
+| Wallet to outgoing Transfer | One wallet has zero or many outgoing transfers |
+| Wallet to incoming Transfer | One wallet has zero or many incoming transfers |
+| Transfer to Ledger Entry | One completed transfer produces exactly two entries |
+| Wallet to Ledger Entry | One wallet has zero or many ledger entries |
+
+Each wallet belongs to exactly one customer.
+Each transfer has exactly one source and one destination wallet.
+Each ledger entry belongs to exactly one transfer and one wallet.
+
+The "exactly two ledger entries" rule is a business invariant.
+A foreign key alone cannot enforce it.
