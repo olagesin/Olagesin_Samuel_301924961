@@ -334,3 +334,22 @@ Any difference indicates an inconsistency requiring investigation.
   direct writes bypass the transfer operation.
 - Production use would require restricted database permissions,
   audit controls and stronger operational safeguards.
+
+
+
+## 10. Sample Data and Validation
+
+### 10.1. Sample Data
+
+The sample-data script is available in [seed.sql](Olagesin_Samuel_301924961_Seed.sql).
+
+All customer details and transaction records are synthetic.
+
+The dataset contains:
+
+| Table | Actual number of records |
+|---|---|
+| customers | [ENTER COUNT] |
+| wallets | [ENTER COUNT] |
+| transfers | [ENTER COUNT] |
+| ledger_entries | [ENTER COUNT] |
