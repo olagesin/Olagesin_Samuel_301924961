@@ -143,3 +143,82 @@ The transfer-to-ledger relationship represents the business
 requirement for exactly two entries per completed transfer.
 Its implementation requires controlled transactional writes;
 foreign keys only establish valid references.
+
+## 8. Relational Schema
+
+The PostgreSQL implementation is available in [schema.sql](Olagesin_Samuel_301924961_Schema.sql).
+
+The relational model is:
+
+- customers(customer_id, full_name, email)
+- wallets(wallet_id, customer_id, currency, opening_balance, balance)
+- transfers(transfer_id, request_key, source_wallet_id,
+  destination_wallet_id, amount, created_at)
+- ledger_entries(entry_id, transfer_id, wallet_id, delta)
+
+### Primary Keys
+
+Each table uses its identifier column as its primary key:
+
+- customers: customer_id
+- wallets: wallet_id
+- transfers: transfer_id
+- ledger_entries: entry_id
+
+### Foreign Keys
+
+- wallets.customer_id references customers.customer_id.
+- transfers.source_wallet_id references wallets.wallet_id.
+- transfers.destination_wallet_id references wallets.wallet_id.
+- ledger_entries.transfer_id references transfers.transfer_id.
+- ledger_entries.wallet_id references wallets.wallet_id.
+
+### Unique Constraints
+
+- Customer email addresses must be unique.
+- The combination of customer_id and currency must be unique.
+- Transfer request keys must be unique.
+- The combination of transfer_id and wallet_id must be unique
+  in ledger_entries.
+
+The NGN-only currency restriction, together with the unique
+customer/currency constraint, permits at most one wallet per customer.
+
+### Data Types
+
+- Identifiers use BIGINT.
+- Names, email addresses and request keys use TEXT.
+- Currency uses CHAR(3).
+- Monetary values use NUMERIC(18,2).
+- Transfer timestamps use TIMESTAMPTZ.
+
+NUMERIC provides exact decimal storage for monetary values.
+TIMESTAMPTZ represents an instant independently of the session's
+display time zone.
+
+### Check and Nullability Constraints
+
+Required fields use NOT NULL.
+
+CHECK constraints enforce:
+- NGN as the supported currency.
+- Non-negative opening and current balances.
+- Positive transfer amounts.
+- Different source and destination wallets.
+- Non-zero ledger movements.
+
+### Rules Requiring Transactional Logic
+
+Table constraints do not enforce every business rule.
+
+The transfer operation must also:
+- Check available funds safely under concurrent requests.
+- Reject input with more than two decimal places before storage.
+- Apply the debit and credit atomically.
+- Produce exactly two balanced ledger entries.
+- Keep stored balances consistent with ledger movements.
+- Distinguish an identical retry from reuse of a request key
+  with a different payload.
+
+These behaviours will be demonstrated in the transactions
+and concurrency portfolio.
